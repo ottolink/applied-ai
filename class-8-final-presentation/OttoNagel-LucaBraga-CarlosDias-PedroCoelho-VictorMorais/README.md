@@ -96,8 +96,8 @@ Follow these steps to get your workflow up and running:
 1. **Clone the Repository:**
 
    ```bash
-   git clone https://github.com/<YOUR_USERNAME>/<REPO_NAME>.git
-   cd <REPO_NAME>
+   git clone https://github.com/ottolink/applied-ai.git
+   cd applied-ai
    ```
 
 2. **Import the Workflow into n8n:**
@@ -232,9 +232,7 @@ This project is licensed under the MIT License. See the [LICENSE](LICENSE) file 
 
 ## Contact
 
-- **Author:** Your Name
-- **Email:** your.email@example.com
-- **LinkedIn:** [Your LinkedIn](#) (optional)
-- **Twitter:** [@yourhandle](#) (optional)
+- **Author:** Otto Nagel, Luca Braga, Victor Morais, Pedro Coelho, Carlos Dias
+- **Email:** otto.vilela@aluno.lsb.com.br
 
 Feel free to reach out if you have any questions, suggestions, or feedback about the workflow!
