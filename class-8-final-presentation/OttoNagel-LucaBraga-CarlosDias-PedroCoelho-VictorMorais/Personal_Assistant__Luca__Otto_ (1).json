@@ -1,0 +1,439 @@
+{
+  "name": "Personal Assistant (Luca, Otto)",
+  "nodes": [
+    {
+      "parameters": {
+        "promptType": "define",
+        "text": "={{ $('WhatsApp Trigger').item.json.messages[0].text.body }}",
+        "options": {
+          "systemMessage": "=You are an efficient executive assistant that processes WhatsApp messages and interprets tasks based on natural language input. Your job is to do the following:\n\nExtract Information from Parameters:\n\nFirst Name and Last Name: Always extract the user’s name from the {{ $('WhatsApp Trigger').item.json.contacts[0].profile.name }} field.\n\nPhone Number: Always extract the phone number from the {{ $('WhatsApp Trigger').item.json.contacts[0].wa_id }} field.\n\nInterpret Task Title:\n\nWhen a user sends a message with a task description (e.g., “me lembra d envia proposta p Diogo!!”), extract the task title and generate a structured JSON with the correct format.\n\nUse AI to clean and structure the task title. For example:\n\nIf the user writes, \"me lembra d envia proposta p diogo!!\", treat it as \"Enviar proposta para o Diogo\".\n\nHandle Time Interpretation:\n\nAlways interpret time-related expressions in the message. Recognize common natural language time expressions like:\n\n\"Amanhã\" (Tomorrow)\n\n\"Depois de amanhã\" (Day after tomorrow)\n\n\"Em 2 horas\" (In 2 hours)\n\n\"Ontem\" (Yesterday)\n\n\"Hoje\" (Today)\n\nConvert these expressions into proper due_date formats and attach them to the task, adjusting the task time accordingly.\n\nUse n8n Tools for Database Operations:\n\nCreate User Tool:\n\nIf the user does not exist (i.e., they are not found in the database by their phone number), use the Create User tool to insert the user into the database.\n\nThe user information should be fetched directly from the parameters:\n\nfirst_name: First part of the user's name (e.g., \"Luca\" from \"Luca Fonseca\").\n\nlast_name: Last part of the user's name (e.g., \"Fonseca\" from \"Luca Fonseca\").\n\nphone_number: The user's phone number (e.g., 5531991314620).\n\nIf the user does not exist, you must always use the Create User tool before proceeding. Never skip this step.\nEnsure the user creation succeeds before calling the Add Task tool.\nIf the creation fails for any reason, do not attempt to add the task. Instead, log the error silently and return a neutral fallback message to the user without exposing internal system details.\n\nAdd Task Tool:\n\nUse the Add Tasks tool to insert the task into the database. The task should include:\n\nfirst_name: The first name of the user (extracted from the parameters).\n\nlast_name: The last name of the user (extracted from the parameters).\n\nbody: The task description (e.g., \"Enviar proposta para o Diogo\").\n\ndue_date: The due date for the task, derived from natural language time references.\n\nHandle Messages Without Time Information:\n\nIf no time-related information is provided (like \"Amanhã\" or \"Em 2 horas\"), assume the task is for today and use today's date as the due_date.\n\nAlternatively, you can prompt the user to confirm the deadline if needed.\n\nExample Workflow:\nUser Sends Message:\n\nUser: \"Me lembra de enviar proposta p Diogo!!\"\n\nAI Agent Parses:\n\nTask body: \"Enviar proposta para o Diogo\"\n\nName: \"Luca Fonseca\" → first_name = \"Luca\", last_name = \"Fonseca\"\n\nDue date: Since no time is provided, AI assumes today's date or asks for clarification if needed.\n\nCheck if User Exists:\n\nThe system checks the database using the phone number {{ $('WhatsApp Trigger').item.json.contacts[0].wa_id }}.\n\nIf the user does not exist, it must always create the user using the Create User tool. Only proceed to Add Task if user creation is successful.\n\nIf the user exists, it proceeds to Add Task.\n\nDatabase Operations:\n\nCreate User: If the user is new, the system will insert the user into the database using the extracted first_name, last_name, and phone_number.\n\nAdd Task: Regardless of whether the user is newly created or not, the system will create the task in the database using the first_name, last_name, body, and due_date.\n\nHandling Time Expressions:\nTo correctly interpret and convert time expressions into standardized formats, you can enhance your system with a time parsing library or an NLP model to recognize expressions such as:\n\n\"Amanhã\" (Tomorrow) → Convert to tomorrow's date and time.\n\n\"Em 2 horas\" (In 2 hours) → Add 2 hours to the current time.\n\n\"Depois de amanhã\" (Day after tomorrow) → Add 2 days.\n\n\"Ontem\" (Yesterday) → Subtract 1 day.\n\n\"Hoje\" (Today) → Use today's date.\n\nSummary:\nThe system will extract the user’s name and phone number directly from the message parameters.\n\nThe system will never ask the user for their name or phone number.\n\nThe system will check if the user exists in the database:\n\nIf the user does not exist, it will create a new user using the Create User tool.\n\nIf the user exists, it will proceed to create the task using the Add Tasks tool.\n\nIt will parse the task description and time expressions, generating a structured task JSON to be inserted into the database.\n\nIf user asks for his tasks, get from tasks database all tasks associated with his user_id and answer a list to him."
+        }
+      },
+      "type": "@n8n/n8n-nodes-langchain.agent",
+      "typeVersion": 1.7,
+      "position": [
+        -20,
+        -200
+      ],
+      "id": "c8bf2a14-8c79-4747-b830-b4bb493ebbb2",
+      "name": "AI Agent"
+    },
+    {
+      "parameters": {
+        "model": {
+          "__rl": true,
+          "mode": "list",
+          "value": "gpt-4o-mini"
+        },
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.lmChatOpenAi",
+      "typeVersion": 1.2,
+      "position": [
+        -140,
+        0
+      ],
+      "id": "1b1ca951-5b6b-49c3-bbc0-123fbdb3e784",
+      "name": "OpenAI Chat Model",
+      "credentials": {
+        "openAiApi": {
+          "id": "roC9MW0Oks5q1vSo",
+          "name": "OpenAi account 14"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "operation": "send",
+        "phoneNumberId": "=643329248853709",
+        "recipientPhoneNumber": "=5531991314620",
+        "textBody": "= {{ $json.output }}",
+        "additionalFields": {}
+      },
+      "type": "n8n-nodes-base.whatsApp",
+      "typeVersion": 1,
+      "position": [
+        440,
+        -200
+      ],
+      "id": "0df909f2-fa56-4e49-a4aa-38081c3054b1",
+      "name": "WhatsApp Business Cloud",
+      "webhookId": "72ca9d98-06f8-48ab-8a49-4bbd11576f97",
+      "credentials": {
+        "whatsAppApi": {
+          "id": "HBy6NTuE3Mv4TV7d",
+          "name": "WhatsApp account 8"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "updates": [
+          "messages"
+        ],
+        "options": {}
+      },
+      "type": "n8n-nodes-base.whatsAppTrigger",
+      "typeVersion": 1,
+      "position": [
+        -460,
+        -200
+      ],
+      "id": "176eef18-ccb6-40a1-802b-4901983d2405",
+      "name": "WhatsApp Trigger",
+      "webhookId": "01e43609-7d43-4583-aadd-c1f31a1c646d",
+      "credentials": {
+        "whatsAppTriggerApi": {
+          "id": "njWVdW2W9y3gug9a",
+          "name": "WhatsApp OAuth account 3"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "descriptionType": "manual",
+        "toolDescription": "Get, add and update tasks in Postgres",
+        "schema": {
+          "__rl": true,
+          "mode": "list",
+          "value": "public"
+        },
+        "table": {
+          "__rl": true,
+          "value": "tasks",
+          "mode": "list",
+          "cachedResultName": "tasks"
+        },
+        "columns": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "created_at": "={{ $fromAI('created_at', ``, 'string') }}",
+            "due_date": "={{ /*n8n-auto-generated-fromAI-override*/ $fromAI('due_date', ``, 'string') }}",
+            "user_id": "={{ $('Postgres').item.json.user_id }}",
+            "task_name": "={{ /*n8n-auto-generated-fromAI-override*/ $fromAI('task_name', ``, 'string') }}"
+          },
+          "matchingColumns": [
+            "id"
+          ],
+          "schema": [
+            {
+              "id": "task_id",
+              "displayName": "task_id",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "number",
+              "canBeUsedToMatch": true,
+              "removed": true
+            },
+            {
+              "id": "user_id",
+              "displayName": "user_id",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "task_name",
+              "displayName": "task_name",
+              "required": true,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "created_at",
+              "displayName": "created_at",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "dateTime",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "due_date",
+              "displayName": "due_date",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "dateTime",
+              "canBeUsedToMatch": true,
+              "removed": false
+            }
+          ],
+          "attemptToConvertTypes": false,
+          "convertFieldsToString": false
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.postgresTool",
+      "typeVersion": 2.5,
+      "position": [
+        400,
+        0
+      ],
+      "id": "0b9ba520-a75a-4737-b697-06b9ededa901",
+      "name": "Add tasks",
+      "credentials": {
+        "postgres": {
+          "id": "gbpglnZ3Vr6OkKXD",
+          "name": "Postgres account 3"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "descriptionType": "manual",
+        "toolDescription": "Add and update users in Postgres",
+        "operation": "upsert",
+        "schema": {
+          "__rl": true,
+          "value": "={{ /*n8n-auto-generated-fromAI-override*/ $fromAI('Schema', ``, 'string') }}",
+          "mode": "name"
+        },
+        "table": {
+          "__rl": true,
+          "value": "users",
+          "mode": "list",
+          "cachedResultName": "users"
+        },
+        "columns": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "phone_number": "={{ $('WhatsApp Trigger').item.json.messages[0].from }}",
+            "first_name": "={{ /*n8n-auto-generated-fromAI-override*/ $fromAI('first_name', ``, 'string') }}",
+            "created_at": "={{ /*n8n-auto-generated-fromAI-override*/ $fromAI('created_at', ``, 'string') }}",
+            "last_name": "={{ /*n8n-auto-generated-fromAI-override*/ $fromAI('last_name', ``, 'string') }}",
+            "user_id": "={{ $('WhatsApp Trigger').item.json.contacts[0].wa_id }}"
+          },
+          "matchingColumns": [
+            "id"
+          ],
+          "schema": [
+            {
+              "id": "user_id",
+              "displayName": "user_id",
+              "required": true,
+              "defaultMatch": false,
+              "display": true,
+              "type": "number",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "created_at",
+              "displayName": "created_at",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "dateTime",
+              "canBeUsedToMatch": false
+            },
+            {
+              "id": "first_name",
+              "displayName": "first_name",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": false
+            },
+            {
+              "id": "last_name",
+              "displayName": "last_name",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": false
+            },
+            {
+              "id": "phone_number",
+              "displayName": "phone_number",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "number",
+              "canBeUsedToMatch": false
+            }
+          ],
+          "attemptToConvertTypes": false,
+          "convertFieldsToString": false
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.postgresTool",
+      "typeVersion": 2.5,
+      "position": [
+        260,
+        0
+      ],
+      "id": "7e490fd8-48c7-46b4-af4e-80b2511629d2",
+      "name": "Create user",
+      "credentials": {
+        "postgres": {
+          "id": "gbpglnZ3Vr6OkKXD",
+          "name": "Postgres account 3"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "sessionIdType": "customKey",
+        "sessionKey": "={{ $('WhatsApp Trigger').item.json.messages[0].text.body }}"
+      },
+      "type": "@n8n/n8n-nodes-langchain.memoryPostgresChat",
+      "typeVersion": 1.3,
+      "position": [
+        60,
+        20
+      ],
+      "id": "d254e86a-c080-4b0b-b0b2-9a760d7825dc",
+      "name": "Postgres Chat Memory",
+      "credentials": {
+        "postgres": {
+          "id": "gbpglnZ3Vr6OkKXD",
+          "name": "Postgres account 3"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "operation": "select",
+        "schema": {
+          "__rl": true,
+          "mode": "list",
+          "value": "public"
+        },
+        "table": {
+          "__rl": true,
+          "value": "users",
+          "mode": "list",
+          "cachedResultName": "users"
+        },
+        "where": {
+          "values": [
+            {
+              "column": "phone_number",
+              "value": "={{ $json.contacts[0].wa_id }}"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.postgres",
+      "typeVersion": 2.5,
+      "position": [
+        -240,
+        -200
+      ],
+      "id": "bdf37377-a3c9-41dd-960c-cf0b7996c28e",
+      "name": "Postgres",
+      "alwaysOutputData": true,
+      "retryOnFail": false,
+      "credentials": {
+        "postgres": {
+          "id": "gbpglnZ3Vr6OkKXD",
+          "name": "Postgres account 3"
+        }
+      }
+    }
+  ],
+  "pinData": {},
+  "connections": {
+    "OpenAI Chat Model": {
+      "ai_languageModel": [
+        [
+          {
+            "node": "AI Agent",
+            "type": "ai_languageModel",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "AI Agent": {
+      "main": [
+        [
+          {
+            "node": "WhatsApp Business Cloud",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "WhatsApp Trigger": {
+      "main": [
+        [
+          {
+            "node": "Postgres",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Add tasks": {
+      "ai_tool": [
+        [
+          {
+            "node": "AI Agent",
+            "type": "ai_tool",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Create user": {
+      "ai_tool": [
+        [
+          {
+            "node": "AI Agent",
+            "type": "ai_tool",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Postgres Chat Memory": {
+      "ai_memory": [
+        [
+          {
+            "node": "AI Agent",
+            "type": "ai_memory",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Postgres": {
+      "main": [
+        [
+          {
+            "node": "AI Agent",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": true,
+  "settings": {
+    "executionOrder": "v1"
+  },
+  "versionId": "001a730a-37bf-4467-b37d-a24577c343e1",
+  "meta": {
+    "templateCredsSetupCompleted": true,
+    "instanceId": "8327181bf8ea62340600b3ae4ca86492534f0ba868c9ce1479915683578b80fd"
+  },
+  "id": "6DHwq5NwCMmyHPAL",
+  "tags": []
+}
